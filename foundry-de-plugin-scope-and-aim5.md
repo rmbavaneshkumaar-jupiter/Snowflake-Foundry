@@ -2,8 +2,7 @@
 
 DE Workflow Plugin · Prepared 29 Oct 2026
 
-> **Intent:** show where the DE plugin sits in Foundry, what Revanth built, and why Snowflake AIM and the plugin are sequential steps, not alternatives.
-> AIM facts come only from docs.snowflake.com. Items marked **ASSUMPTION** are my inference and need checking. No pricing figures are used.
+AIM - AI powered migration and modernization platform
 
 ---
 
