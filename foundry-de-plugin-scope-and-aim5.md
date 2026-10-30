@@ -1,6 +1,6 @@
 # Foundry DE Plugin: Scope and Snowflake AIM Boundary
 
-Draft for the 30 Oct 2026 review · DE Workflow Plugin · Prepared 29 Oct 2026
+DE Workflow Plugin · Prepared 29 Oct 2026
 
 > **Intent:** show where the DE plugin sits in Foundry, what Revanth built, and why Snowflake AIM and the plugin are sequential steps, not alternatives.
 > AIM facts come only from docs.snowflake.com. Items marked **ASSUMPTION** are my inference and need checking. No pricing figures are used.
@@ -69,7 +69,7 @@ flowchart LR
 
 ---
 
-## 3. 30-second script
+## 3.Comparison
 
 > "AIM and our DE plugin are not competing. AIM moves an existing database and its code into Snowflake and proves the data matches. Our plugin starts after that: it builds new Silver and Gold pipelines where we own the logic, to Foundry standards. Both use Cortex Code credits, so neither is free. To keep cost down, the plugin should use the agent only at design time and run daily loads with Snowflake Tasks. I would like two days on one real use case to measure credits and decide what we keep, adopt from AIM, or drop."
 
@@ -153,22 +153,5 @@ Other items to fix along the way: hooks fail open and there is no SQL hook (safe
 - Re-run one failed table, not the whole pipeline.
 - Progress state in a Snowflake table, readable by the team.
 - Use AIM's Assess report for any database source instead of building our own.
-
-### 5.5 Proposed next step
-
-A two-day fit-gap on one real use case:
-
-- **Day 1:** run the plugin on the real files; record what works, what breaks, and credits used.
-- **Day 2:** check whether AIM covers any part (data move or validation); write a one-page keep / adopt / drop list with credit numbers.
-
-This also feeds the E2E testing Balaji already asked for.
-
-### 5.6 Open questions
-
-1. Was AIM considered when the plugin was scoped? (AIM announced June 2026; plugin listed "Yet to Start" on 22 Oct 2026.)
-2. What is the source type for the real use case: files only, or also a database?
-3. Is AIM enabled on our accounts and on client accounts?
-
----
 
 *Sources: Foundry announcement (22 Oct 2026); Revanth's design doc, skills and run outputs; earlier outsider review and AIM vs Foundry gap map; AIM facts from docs.snowflake.com only.*
