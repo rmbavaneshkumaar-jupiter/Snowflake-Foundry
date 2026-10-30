@@ -2,7 +2,7 @@
 
 DE Workflow Plugin · Prepared 29 Oct 2026
 
-AIM - AI powered migration and modernization platform
+AIM - AI driven Modernization and Virtualization.
 
 ---
 
