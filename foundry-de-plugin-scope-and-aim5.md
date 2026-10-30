@@ -71,7 +71,7 @@ flowchart LR
 
 ## 3.Comparison
 
-> "AIM and our DE plugin are not competing. AIM moves an existing database and its code into Snowflake and proves the data matches. Our plugin starts after that: it builds new Silver and Gold pipelines where we own the logic, to Foundry standards. Both use Cortex Code credits, so neither is free. To keep cost down, the plugin should use the agent only at design time and run daily loads with Snowflake Tasks. I would like two days on one real use case to measure credits and decide what we keep, adopt from AIM, or drop."
+> "AIM and our DE plugin are not competing. AIM moves an existing database and its code into Snowflake and proves the data matches. Our plugin starts after that: it builds new Silver and Gold pipelines where we own the logic, to Foundry standards. Both use Cortex Code credits, so neither is free. To keep cost down, the plugin should use the agent only at design time and run daily loads with Snowflake Tasks.
 
 ---
 
