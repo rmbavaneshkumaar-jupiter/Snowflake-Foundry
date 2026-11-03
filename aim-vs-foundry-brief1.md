@@ -1,7 +1,5 @@
 # Snowflake AIM vs Foundry and the DE Plugin
 
-**Prepared:** 2026-11-02. Updated 2026-11-03. This is a proposal for discussion, not a decision.
-**Basis:** official Snowflake documentation only (sources are listed at the end), plus one hands-on test on our trial account (Section 2).
 
 ---
 
@@ -32,7 +30,7 @@
 
 **Where AIM runs:** per the Snowflake docs, AIM runs from the **Cortex Code CLI** or the **AIM desktop app**, not from Snowsight. We have not fully confirmed the Snowsight point yet.
 
-**Cost: no estimate before you run**
+**COST - nO ESTIMATE BEFORE YOU RUN**
 - The AIM docs give **no pre-run cost or credit estimate** for an AIM project.
 - The Assessment page estimates only the **manual effort** still needed, not credits.
 - The SnowConvert Migration Assistant billing page says it is **not possible to precisely estimate** the cost of an interaction. Its only rough figure is about **3,500 tokens (about 0.0089 credits) per EWI fix**, and it can be much more.
