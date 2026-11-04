@@ -72,7 +72,6 @@
 **Cost: no estimate before you run**
 - The AIM docs give **no pre-run cost or credit estimate** for an AIM project.
 - The Assessment page estimates only the **manual effort** still needed, not credits.
-- The SnowConvert Migration Assistant billing page says it is **not possible to precisely estimate** the cost of an interaction. Its only rough figure is about **3,500 tokens (about 0.0089 credits) per EWI fix**, and it can be much more.
 - So with AIM, cost is known only **after** the work has run (through usage views and budgets).
 
 **Foundry: cost control is defined**
