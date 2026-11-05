@@ -9,8 +9,8 @@
 
 <table>
 <tr>
-<th width="50%">LEFT: legacy code in, AIM migrated it</th>
-<th width="50%">RIGHT: a decision ask, AIM could not do it</th>
+<th width="50%">LEFT: Legacy code in, AIM migrated it</th>
+<th width="50%">RIGHT: A decision asked, AIM could not do it</th>
 </tr>
 <tr>
 <td valign="top">
