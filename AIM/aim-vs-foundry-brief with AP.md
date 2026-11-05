@@ -60,7 +60,7 @@
 
 ## 2. Action Plan
 
-| # | Suggestion | Solution |
+| # | Understanding | Solution |
 |---|---|---|
 | 1 | Approval gates can be skipped (orchestrator offers "Skip and continue") | Remove skip for design and load approvals so the pipeline always stops until a human approves. |
 | 2 | No test set, only clean static TPCH data profiled | Add a small file-based dataset with planted defects (nulls, duplicates, bad dates); check each run against expected results. |
