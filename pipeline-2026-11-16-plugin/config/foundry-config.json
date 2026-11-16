@@ -1,0 +1,50 @@
+{
+  "_comment": "Shared settings for the Foundry DE plugin. The hooks read this file. Change values here, not in the hook script. No passwords or tokens in this file.",
+
+  "snowflake": {
+    "database": "DE_TEST",
+    "warehouse": "DE_TEST_WH",
+    "role": "SYSADMIN",
+    "schemas": {
+      "bronze": "BRONZE",
+      "silver": "SILVER",
+      "gold": "GOLD",
+      "monitoring": "MONITORING"
+    }
+  },
+
+  "thresholds": {
+    "quarantine_warn_pct": 1,
+    "quarantine_stop_pct": 20,
+    "max_credits_per_run": 5.0
+  },
+
+  "batch": {
+    "design_batch_id": "B001",
+    "current_batch_id": "B001"
+  },
+
+  "reports": {
+    "_comment": "Folder where each skill saves <skill>_<batch>_report.md. A relative path is read from the CoCo workspace folder. You can also put a full path, for example D:\\\\Claude\\\\coco-workspace\\\\pipeline-reports",
+    "dir": "pipeline-reports",
+    "file_pattern": "{skill}_{batch}_report*.md"
+  },
+
+  "pipeline": {
+    "_comment": "Skills in run order. scope=design: approved once, using design_batch_id. scope=batch: approved again for every new current_batch_id.",
+    "skills": [
+      { "step": 1, "name": "de-deep-profile",         "scope": "design" },
+      { "step": 2, "name": "de-deep-schema-design",   "scope": "design" },
+      { "step": 3, "name": "de-deep-schema-setup",    "scope": "design" },
+      { "step": 4, "name": "de-deep-transform-setup", "scope": "design" },
+      { "step": 5, "name": "de-deep-load-validate",   "scope": "batch" },
+      { "step": 6, "name": "de-deep-transform",       "scope": "batch" },
+      { "step": 7, "name": "de-deep-share-monitor",   "scope": "batch" }
+    ]
+  },
+
+  "approval": {
+    "_comment": "The human types this word, then the skill name, in the CoCo chat. Example: APPROVE de-deep-profile",
+    "keyword": "APPROVE"
+  }
+}

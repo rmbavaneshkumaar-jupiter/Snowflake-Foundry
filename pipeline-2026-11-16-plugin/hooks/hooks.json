@@ -1,0 +1,41 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"D:/Claude/pipeline-2026-11-16-plugin/hooks/foundry_hook.py\" session-start",
+            "timeout": 30,
+            "statusMessage": "Foundry: reading pipeline state"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"D:/Claude/pipeline-2026-11-16-plugin/hooks/foundry_hook.py\" prompt-submit",
+            "timeout": 30,
+            "statusMessage": "Foundry: checking skill order and approvals"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"D:/Claude/pipeline-2026-11-16-plugin/hooks/foundry_hook.py\" pre-tool",
+            "timeout": 30,
+            "statusMessage": "Foundry: checking skill order"
+          }
+        ]
+      }
+    ]
+  }
+}
