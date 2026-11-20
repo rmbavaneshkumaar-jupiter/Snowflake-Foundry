@@ -1,6 +1,6 @@
 # Skill 1: From Bronze to a trusted profile
 
-![Skill 1: Bronze tables, profile steps, output](img/skill-1-flow.png)
+![Skill 1: Bronze tables, profile steps, output](skill-1-flow.png)
 
 ## What we feed in first
 
@@ -35,7 +35,7 @@ All 6 tables were profiled, and the person approved the scope table by table. Th
 
 # Skill 2: Design Silver and Gold
 
-![Skill 2 flow: profile and business logic to 5 design tables](img/skill-2-flow.png)
+![Skill 2 flow: profile and business logic to 5 design tables](skill-2-flow.png)
 
 ## What we feed in
 
@@ -64,7 +64,7 @@ Skill 2 only designs. It creates no objects in Snowflake. The design is written 
 
 # Skill 3: Build empty tables and security
 
-![Skill 3 flow: approved design to empty Silver tables, roles and masking](img/skill-3-flow.png)
+![Skill 3 flow: approved design to empty Silver tables, roles and masking](skill-3-flow.png)
 
 ## What we feed in
 
@@ -91,7 +91,7 @@ Skill 3 turns the approved design into real Snowflake objects. It runs DDL only 
 
 # Skill 4: Build the load procedures
 
-![Skill 4 flow: design and empty tables to load procedures and logs](img/skill-4-flow.png)
+![Skill 4 flow: design and empty tables to load procedures and logs](skill-4-flow.png)
 
 ## What we feed in
 
@@ -118,7 +118,7 @@ Skill 4 writes the load procedures and runs none of them. No data moves in this 
 
 # Skill 5: Load and check one batch
 
-![Skill 5 flow: Bronze batch loaded into Silver with quarantine](img/skill-5-flow.png)
+![Skill 5 flow: Bronze batch loaded into Silver with quarantine](skill-5-flow.png)
 
 ## What we feed in
 
@@ -146,7 +146,7 @@ Silver loaded 973 rows: customers 97, products 28, orders 198, order items 440, 
 
 # Skill 6: Build the Gold tables
 
-![Skill 6 flow: loaded Silver and Gold design to Gold Dynamic Tables](img/skill-6-flow.png)
+![Skill 6 flow: loaded Silver and Gold design to Gold Dynamic Tables](skill-6-flow.png)
 
 ## What we feed in
 
@@ -175,7 +175,7 @@ Totals: gross sales 441,950, refunds 15,845, net sales 426,105.
 
 # Skill 7: Audit access and track cost
 
-![Skill 7 flow: roles, logs and Gold to audit, cost and health views](img/skill-7-flow.png)
+![Skill 7 flow: roles, logs and Gold to audit, cost and health views](skill-7-flow.png)
 
 ## What we feed in
 
