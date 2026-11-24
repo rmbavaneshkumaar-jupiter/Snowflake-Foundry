@@ -1,0 +1,110 @@
+# Foundry dbt pipeline - Silver CUSTOMERS descriptions and tests
+# (models/silver/silver_customers.yml)
+#
+# WHAT THIS FILE DOES
+# Describes the two models (silver_customers, quarantine_customers) and adds
+# dbt tests. A test is a check that runs AFTER the model is built
+# ("dbt test" or "dbt build"). It does not change data; it only reports.
+#
+# BEFORE / AFTER example (accepted_values on CITY)
+#   Before: Bronze CITY '  pune '  -> the clean rule makes it 'Pune'.
+#   After:  the test reads Silver CITY and finds only the 6 known cities.
+#           If anyone breaks the clean rule, 'pune' shows up and the test FAILS.
+#
+# severity
+#   error (default) = dbt marks the run as failed.
+#   warn            = dbt reports it, the run continues.
+# Silver tests are error: bad data must never pass quietly into Gold.
+# Quarantine tests are warn: they only describe the rejected rows.
+#
+# NOT COVERED HERE (would need one more file or the dbt_utils package):
+#   - EMAIL pattern test on Silver
+#   - row count check: Silver + quarantine = Bronze (100 = 97 + 3)
+#   - quarantine % against quarantine_warn_pct / quarantine_stop_pct
+
+version: 2
+
+models:
+  - name: silver_customers
+    description: >
+      Clean customer rows: Bronze rows that passed all 9 QUARANTINE rules,
+      with the 5 CLEAN rules applied and real types. Batch B001: 97 rows.
+    columns:
+      - name: CUSTOMER_ID
+        description: "Customer key as NUMBER. One row per customer."
+        tests:
+          - not_null
+          - unique
+      - name: FIRST_NAME
+        description: "First name, spaces trimmed. Never empty."
+        tests:
+          - not_null
+      - name: LAST_NAME
+        description: "Last name, spaces trimmed. Never empty."
+        tests:
+          - not_null
+      - name: EMAIL
+        description: "Email in lower case, spaces trimmed. Empty text became NULL; NULL is allowed."
+      - name: PHONE
+        description: "Phone number, spaces trimmed."
+      - name: CITY
+        description: >
+          City, trimmed and Initcap ('  pune ' -> 'Pune'). Only the 6 allowed cities.
+          Known gap: a valid new city such as Madurai is quarantined by the rule.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Mumbai', 'Delhi', 'Pune', 'Bengaluru', 'Hyderabad', 'Chennai']
+      - name: SIGNUP_DATE
+        description: "Signup date as DATE. NULL allowed."
+      - name: _LOADED_AT
+        description: "Audit: time the row was loaded into Bronze."
+      - name: _SOURCE_FILE
+        description: "Audit: CSV file the row came from."
+      - name: _BATCH_ID
+        description: "Audit: load batch, for example B001."
+        tests:
+          - not_null
+      - name: _SOURCE_SYSTEM
+        description: "Audit: system that sent the file."
+      - name: _SOURCE_ROW_NUMBER
+        description: "Audit: line number inside the CSV file."
+
+  - name: quarantine_customers
+    description: >
+      Rejected customer rows: Bronze rows that failed at least one QUARANTINE
+      rule. Raw values kept as text. Batch B001: 3 rows (customer 96 bad email,
+      customer 99 twice as duplicate key).
+    columns:
+      - name: CUSTOMER_ID
+        description: "Raw text value from Bronze."
+      - name: FIRST_NAME
+        description: "Raw text value from Bronze."
+      - name: LAST_NAME
+        description: "Raw text value from Bronze."
+      - name: EMAIL
+        description: "Raw text value from Bronze."
+      - name: PHONE
+        description: "Raw text value from Bronze."
+      - name: CITY
+        description: "Raw text value from Bronze."
+      - name: SIGNUP_DATE
+        description: "Raw text value from Bronze."
+      - name: REJECT_REASON
+        description: "Every failed rule, joined with ' | ', for example 'CUSTOMER_ID-UNIQUE_KEY: DUPLICATE_KEY_IN_BATCH'."
+        tests:
+          - not_null:
+              config:
+                severity: warn
+      - name: QUARANTINED_AT
+        description: "Time the dbt run put the row here."
+      - name: _LOADED_AT
+        description: "Audit: time the row was loaded into Bronze."
+      - name: _SOURCE_FILE
+        description: "Audit: CSV file the row came from."
+      - name: _BATCH_ID
+        description: "Audit: load batch, for example B001."
+      - name: _SOURCE_SYSTEM
+        description: "Audit: system that sent the file."
+      - name: _SOURCE_ROW_NUMBER
+        description: "Audit: line number inside the CSV file."

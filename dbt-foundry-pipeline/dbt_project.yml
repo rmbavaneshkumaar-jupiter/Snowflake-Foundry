@@ -1,0 +1,59 @@
+# Foundry dbt pipeline - project file
+#
+# SINGLE SOURCE OF TRUTH = config/foundry_config.yml
+# dbt cannot read that file by itself, so the values are copied into the
+# "vars:" block at the bottom. RULE: when you change foundry_config.yml,
+# change the same value here. The two files must always be identical.
+#
+# Database, warehouse and role are NOT here. dbt takes them from profiles.yml
+# (Snowflake dbt Projects needs profiles.yml). Models use target.database and
+# target.warehouse, so no name is written inside model files.
+
+name: foundry_pipeline
+version: "1.0.0"
+config-version: 2
+
+# Name of the connection block inside profiles.yml
+profile: foundry_pipeline
+
+# Folders dbt reads
+model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+
+models:
+  foundry_pipeline:
+
+    # Silver: clean tables (models/silver/)
+    silver:
+      +materialized: table
+      +schema: "{{ var('schemas')['silver'] }}"
+
+    # Quarantine: rejected rows with reason (models/quarantine/), same schema as Silver
+    quarantine:
+      +materialized: table
+      +schema: "{{ var('schemas')['silver'] }}"
+
+    # Gold: type chosen by gold_mode (dynamic_table or table)
+    # target_lag and snowflake_warehouse are used only by dynamic_table;
+    # a normal table ignores them.
+    gold:
+      +materialized: "{{ var('gold_mode') }}"
+      +schema: "{{ var('schemas')['gold'] }}"
+      +target_lag: "{{ var('gold_target_lag') }}"
+      +snowflake_warehouse: "{{ target.warehouse }}"
+
+# Copy of config/foundry_config.yml (keep identical; database/warehouse come from profiles.yml)
+vars:
+  schemas:
+    bronze: BRONZE
+    silver: SILVER
+    gold: GOLD
+    monitoring: MONITORING
+  quarantine_warn_pct: 1
+  quarantine_stop_pct: 20
+  credit_limit: 5.0
+  gold_mode: dynamic_table      # or table
+  gold_target_lag: 1 hour       # used only when gold_mode is dynamic_table
+  load_mode: incremental_merge  # or full_reload

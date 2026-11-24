@@ -1,0 +1,122 @@
+# Foundry dbt pipeline - Bronze sources (models/bronze/sources.yml)
+#
+# WHAT THIS FILE DOES
+# The Bronze tables are loaded OUTSIDE dbt (COPY INTO from CSV files).
+# dbt does not create them. This file only tells dbt: "these tables already
+# exist, here is where they live". After that, a Silver model can read them
+# with source() instead of writing the full table name.
+#
+# BEFORE / AFTER example (inside a Silver model .sql file)
+#   Before (hardcoded name, breaks when we move account or database):
+#       select * from DE_TEST.BRONZE.CUSTOMERS
+#   After (name comes from this file; dbt fills in database and schema):
+#       select * from {{ source('bronze', 'CUSTOMERS') }}
+#   dbt turns the "after" line into DE_TEST.BRONZE.CUSTOMERS when it runs.
+#   Bonus: dbt now knows Silver CUSTOMERS depends on Bronze CUSTOMERS
+#   (it shows this in the lineage graph and runs things in the right order).
+#
+# WHERE THE NAMES COME FROM (nothing hardcoded here)
+#   database = target.database -> from profiles.yml (DE_TEST today)
+#   schema   = var schemas.bronze -> from the vars: block in dbt_project.yml
+#              (BRONZE today, a copy of config/foundry_config.yml)
+#
+# WHAT BRONZE LOOKS LIKE
+#   Every data column is VARCHAR (text), exactly as in the CSV file.
+#   Five audit columns are added by the load:
+#   _LOADED_AT, _SOURCE_FILE, _BATCH_ID, _SOURCE_SYSTEM, _SOURCE_ROW_NUMBER.
+#   Type conversion and data quality checks happen in Silver, not here.
+#
+# TESTS
+#   Only not_null on each table's ID column, with severity: warn.
+#   warn = dbt reports the problem but does NOT stop the run. Bad rows are
+#   handled by Silver + quarantine, so Bronze must never block the pipeline.
+#   Note: not_null catches NULL only. An empty text '' is NOT NULL, so it
+#   passes here; Silver rules catch it.
+
+version: 2
+
+sources:
+  - name: bronze
+    description: "Raw tables loaded from CSV files outside dbt. All data columns are text."
+    database: "{{ target.database }}"
+    schema: "{{ var('schemas')['bronze'] }}"
+
+    tables:
+      # Worked example: CUSTOMERS with every column described.
+      - name: CUSTOMERS
+        description: "Raw customer rows, one row per CSV line."
+        columns:
+          - name: CUSTOMER_ID
+            description: "Customer key, as text. Should be unique; Silver checks that."
+            tests:
+              - not_null:
+                  config:
+                    severity: warn
+          - name: FIRST_NAME
+            description: "First name, as text."
+          - name: LAST_NAME
+            description: "Last name, as text."
+          - name: EMAIL
+            description: "Email address, as text. May be NULL or empty in raw data."
+          - name: PHONE
+            description: "Phone number, as text."
+          - name: CITY
+            description: "City name, as text. May have extra spaces or mixed case."
+          - name: SIGNUP_DATE
+            description: "Signup date, still text. Silver converts it to DATE."
+          - name: _LOADED_AT
+            description: "Audit: time the row was loaded into Bronze."
+          - name: _SOURCE_FILE
+            description: "Audit: name of the CSV file the row came from."
+          - name: _BATCH_ID
+            description: "Audit: load batch, for example B001."
+          - name: _SOURCE_SYSTEM
+            description: "Audit: system that sent the file."
+          - name: _SOURCE_ROW_NUMBER
+            description: "Audit: line number inside the CSV file."
+
+      # The other five tables: only the ID column is listed, for the test.
+      - name: PRODUCTS
+        description: "Raw product rows."
+        columns:
+          - name: PRODUCT_ID
+            tests:
+              - not_null:
+                  config:
+                    severity: warn
+
+      - name: ORDERS
+        description: "Raw order rows."
+        columns:
+          - name: ORDER_ID
+            tests:
+              - not_null:
+                  config:
+                    severity: warn
+
+      - name: ORDER_ITEMS
+        description: "Raw order line rows."
+        columns:
+          - name: ORDER_ITEM_ID
+            tests:
+              - not_null:
+                  config:
+                    severity: warn
+
+      - name: PAYMENTS
+        description: "Raw payment rows."
+        columns:
+          - name: PAYMENT_ID
+            tests:
+              - not_null:
+                  config:
+                    severity: warn
+
+      - name: RETURNS
+        description: "Raw return rows."
+        columns:
+          - name: RETURN_ID
+            tests:
+              - not_null:
+                  config:
+                    severity: warn
