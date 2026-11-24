@@ -16,7 +16,7 @@ foundry_pipeline:            # must match "profile:" in dbt_project.yml
       account: not_needed    # dummy, ignored by Snowflake
       user: not_needed       # dummy, ignored by Snowflake
       role: DE_PIPELINE_ROLE # = role in foundry_config.yml
-      database: DE_TEST      # = database in foundry_config.yml
+      database: DE_DBT       # = database in foundry_config.yml
       warehouse: DE_TEST_WH  # = warehouse in foundry_config.yml
       schema: SILVER         # = schemas.silver in foundry_config.yml
       threads: 4
