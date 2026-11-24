@@ -8,6 +8,17 @@
 # Database, warehouse and role are NOT here. dbt takes them from profiles.yml
 # (Snowflake dbt Projects needs profiles.yml). Models use target.database and
 # target.warehouse, so no name is written inside model files.
+#
+# IMPORTANT: NO var() IN THE "models:" BLOCK BELOW
+# dbt reads this file BEFORE its own "vars:" block exists, so var() here fails:
+#   "Required var 'schemas' not found in config: Vars supplied to <Configuration> = {}"
+# (dbt docs, "About dbt_project.yml context": only vars passed with --vars work here.)
+#   Before (failed):  +schema: var('schemas')['silver']   (inside double curly braces)
+#   After  (works):   +schema: SILVER
+# So the schema names below are LITERALS. Moving to another schema naming =
+# change foundry_config.yml, the vars: block AND these literals.
+# Model files (.sql) and sources.yml CAN use var(); there it works normally.
+# (No curly braces even in comments here, to be safe.)
 
 name: foundry_pipeline
 version: "1.0.0"
@@ -28,21 +39,21 @@ models:
     # Silver: clean tables (models/silver/)
     silver:
       +materialized: table
-      +schema: "{{ var('schemas')['silver'] }}"
+      +schema: SILVER          # literal; must match vars schemas.silver
 
     # Quarantine: rejected rows with reason (models/quarantine/), same schema as Silver
     quarantine:
       +materialized: table
-      +schema: "{{ var('schemas')['silver'] }}"
+      +schema: SILVER          # literal; must match vars schemas.silver
 
-    # Gold: type chosen by gold_mode (dynamic_table or table)
-    # target_lag and snowflake_warehouse are used only by dynamic_table;
-    # a normal table ignores them.
+    # Gold: only the schema is set here.
+    # Table type (dynamic_table or table) and target_lag are NOT set here,
+    # because they come from vars. Each Gold model file will set them itself:
+    #   config(materialized=var('gold_mode'), target_lag=var('gold_target_lag'),
+    #          snowflake_warehouse=target.warehouse)   (inside double curly braces)
+    # (Gold model files are not written yet.)
     gold:
-      +materialized: "{{ var('gold_mode') }}"
-      +schema: "{{ var('schemas')['gold'] }}"
-      +target_lag: "{{ var('gold_target_lag') }}"
-      +snowflake_warehouse: "{{ target.warehouse }}"
+      +schema: GOLD            # literal; must match vars schemas.gold
 
 # Copy of config/foundry_config.yml (keep identical; database/warehouse come from profiles.yml)
 vars:
