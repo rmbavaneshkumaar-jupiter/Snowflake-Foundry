@@ -1,0 +1,98 @@
+# Foundry dbt pipeline - Silver PAYMENTS descriptions and tests
+# (models/silver/silver_payments.yml)
+#
+# WHAT THIS FILE DOES
+# Describes the two models (silver_payments, quarantine_payments) and adds dbt tests.
+# A test runs AFTER the model is built ("dbt test" or "dbt build"). It does
+# not change data; it only reports. Same pattern as silver_customers.yml.
+#
+# BEFORE / AFTER example
+#   Before: Bronze PAYMENT_METHOD 'BITCOIN' (payment 5042) -> quarantined.
+#   After:  accepted_values reads Silver PAYMENT_METHOD and finds only UPI, CASH, CARD.
+#   relationships: every Silver ORDER_ID must exist in silver_orders.
+#
+# severity: Silver tests are error (bad data must never pass quietly into Gold);
+# the quarantine test is warn (it only describes the rejected rows).
+#
+# NOT COVERED HERE (same as CUSTOMERS): range checks (> 0, >= 0) as tests,
+# row count check Silver + quarantine = Bronze, quarantine % against
+# quarantine_warn_pct / quarantine_stop_pct.
+
+version: 2
+
+models:
+  - name: silver_payments
+    description: >
+      Clean payment rows: Bronze rows that passed all 11 QUARANTINE rules (including the parent check on ORDER_ID), with the CLEAN rule applied and real types. Batch B001 (paper check): 183 rows.
+    columns:
+      - name: PAYMENT_ID
+        description: "Payment key as NUMBER. One row per payment."
+        tests:
+          - not_null
+          - unique
+      - name: ORDER_ID
+        description: "Order key as NUMBER. Must exist in silver_orders."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('silver_orders')
+              field: ORDER_ID
+      - name: PAYMENT_METHOD
+        description: "Method, trimmed and upper case. Only UPI, CASH, CARD."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['UPI', 'CASH', 'CARD']
+      - name: PAYMENT_AMOUNT
+        description: "Amount as NUMBER(12,2), from Bronze AMOUNT. Always above 0."
+        tests:
+          - not_null
+      - name: PAYMENT_DATE
+        description: "Payment date as DATE."
+        tests:
+          - not_null
+      - name: _LOADED_AT
+        description: "Audit: time the row was loaded into Bronze."
+      - name: _SOURCE_FILE
+        description: "Audit: CSV file the row came from."
+      - name: _BATCH_ID
+        description: "Audit: load batch, for example B001."
+        tests:
+          - not_null
+      - name: _SOURCE_SYSTEM
+        description: "Audit: system that sent the file."
+      - name: _SOURCE_ROW_NUMBER
+        description: "Audit: line number inside the CSV file."
+
+  - name: quarantine_payments
+    description: >
+      Rejected payment rows with raw values. Batch B001 (paper check): 7 rows (5011 amount 'xyz', 5042 BITCOIN, 5063 twice duplicate, 5047/5142 parent quarantined, 5190 parent missing).
+    columns:
+      - name: PAYMENT_ID
+        description: "Raw text value from Bronze."
+      - name: ORDER_ID
+        description: "Raw text value from Bronze."
+      - name: PAYMENT_METHOD
+        description: "Raw text value from Bronze."
+      - name: AMOUNT
+        description: "Raw text value from Bronze."
+      - name: PAYMENT_DATE
+        description: "Raw text value from Bronze."
+      - name: REJECT_REASON
+        description: "Every failed rule, joined with ' | ', for example 'ORDER_ID-RANGE: PARENT_QUARANTINED'."
+        tests:
+          - not_null:
+              config:
+                severity: warn
+      - name: QUARANTINED_AT
+        description: "Time the dbt run put the row here."
+      - name: _LOADED_AT
+        description: "Audit: time the row was loaded into Bronze."
+      - name: _SOURCE_FILE
+        description: "Audit: CSV file the row came from."
+      - name: _BATCH_ID
+        description: "Audit: load batch, for example B001."
+      - name: _SOURCE_SYSTEM
+        description: "Audit: system that sent the file."
+      - name: _SOURCE_ROW_NUMBER
+        description: "Audit: line number inside the CSV file."

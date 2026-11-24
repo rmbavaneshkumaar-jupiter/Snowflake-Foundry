@@ -1,0 +1,98 @@
+# Foundry dbt pipeline - Silver RETURNS descriptions and tests
+# (models/silver/silver_returns.yml)
+#
+# WHAT THIS FILE DOES
+# Describes the two models (silver_returns, quarantine_returns) and adds dbt tests.
+# A test runs AFTER the model is built ("dbt test" or "dbt build"). It does
+# not change data; it only reports. Same pattern as silver_customers.yml.
+#
+# BEFORE / AFTER example
+#   Before: Bronze REASON 'CHANGED_MIND' (return 8012) -> in the 4 allowed values.
+#   After:  accepted_values reads Silver RETURN_REASON and finds only the 4 reasons.
+#   relationships: every Silver ORDER_ID must exist in silver_orders.
+#
+# severity: Silver tests are error (bad data must never pass quietly into Gold);
+# the quarantine test is warn (it only describes the rejected rows).
+#
+# NOT COVERED HERE (same as CUSTOMERS): range checks (> 0, >= 0) as tests,
+# row count check Silver + quarantine = Bronze, quarantine % against
+# quarantine_warn_pct / quarantine_stop_pct.
+
+version: 2
+
+models:
+  - name: silver_returns
+    description: >
+      Clean return rows: Bronze rows that passed all 11 QUARANTINE rules (including the parent check on ORDER_ID), with the CLEAN rule applied and real types. Batch B001 (paper check): 27 rows.
+    columns:
+      - name: RETURN_ID
+        description: "Return key as NUMBER. One row per return."
+        tests:
+          - not_null
+          - unique
+      - name: ORDER_ID
+        description: "Order key as NUMBER. Must exist in silver_orders."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('silver_orders')
+              field: ORDER_ID
+      - name: RETURN_REASON
+        description: "Reason, trimmed and upper case (from Bronze REASON)."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['NOT_NEEDED', 'WRONG_ITEM', 'DAMAGED', 'CHANGED_MIND']
+      - name: REFUND_AMOUNT
+        description: "Refund as NUMBER(12,2). Always above 0."
+        tests:
+          - not_null
+      - name: RETURN_DATE
+        description: "Return date as DATE."
+        tests:
+          - not_null
+      - name: _LOADED_AT
+        description: "Audit: time the row was loaded into Bronze."
+      - name: _SOURCE_FILE
+        description: "Audit: CSV file the row came from."
+      - name: _BATCH_ID
+        description: "Audit: load batch, for example B001."
+        tests:
+          - not_null
+      - name: _SOURCE_SYSTEM
+        description: "Audit: system that sent the file."
+      - name: _SOURCE_ROW_NUMBER
+        description: "Audit: line number inside the CSV file."
+
+  - name: quarantine_returns
+    description: >
+      Rejected return rows with raw values. Batch B001 (paper check): 3 rows (8005 refund -10.00, 8028 parent quarantined, 8029 parent missing).
+    columns:
+      - name: RETURN_ID
+        description: "Raw text value from Bronze."
+      - name: ORDER_ID
+        description: "Raw text value from Bronze."
+      - name: REASON
+        description: "Raw text value from Bronze."
+      - name: REFUND_AMOUNT
+        description: "Raw text value from Bronze."
+      - name: RETURN_DATE
+        description: "Raw text value from Bronze."
+      - name: REJECT_REASON
+        description: "Every failed rule, joined with ' | ', for example 'ORDER_ID-RANGE: PARENT_QUARANTINED'."
+        tests:
+          - not_null:
+              config:
+                severity: warn
+      - name: QUARANTINED_AT
+        description: "Time the dbt run put the row here."
+      - name: _LOADED_AT
+        description: "Audit: time the row was loaded into Bronze."
+      - name: _SOURCE_FILE
+        description: "Audit: CSV file the row came from."
+      - name: _BATCH_ID
+        description: "Audit: load batch, for example B001."
+      - name: _SOURCE_SYSTEM
+        description: "Audit: system that sent the file."
+      - name: _SOURCE_ROW_NUMBER
+        description: "Audit: line number inside the CSV file."

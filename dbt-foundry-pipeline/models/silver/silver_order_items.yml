@@ -1,0 +1,100 @@
+# Foundry dbt pipeline - Silver ORDER_ITEMS descriptions and tests
+# (models/silver/silver_order_items.yml)
+#
+# WHAT THIS FILE DOES
+# Describes the two models (silver_order_items, quarantine_order_items) and adds dbt tests.
+# A test runs AFTER the model is built ("dbt test" or "dbt build"). It does
+# not change data; it only reports. Same pattern as silver_customers.yml.
+#
+# BEFORE / AFTER example
+#   Before: Bronze line 111 points to order 1050, which is in quarantine.
+#   After:  quarantine_order_items keeps line 111 out of Silver.
+#   relationships: every Silver ORDER_ID must exist in silver_orders and every
+#           PRODUCT_ID in silver_products. If the parent check breaks, these tests FAIL.
+#
+# severity: Silver tests are error (bad data must never pass quietly into Gold);
+# the quarantine test is warn (it only describes the rejected rows).
+#
+# NOT COVERED HERE (same as CUSTOMERS): range checks (> 0, >= 0) as tests,
+# row count check Silver + quarantine = Bronze, quarantine % against
+# quarantine_warn_pct / quarantine_stop_pct.
+
+version: 2
+
+models:
+  - name: silver_order_items
+    description: >
+      Clean order line rows: Bronze rows that passed all 13 QUARANTINE rules (including parent checks on ORDER_ID and PRODUCT_ID), with real types. Batch B001 (paper check): 440 rows.
+    columns:
+      - name: ORDER_ITEM_ID
+        description: "Order line key as NUMBER. One row per line."
+        tests:
+          - not_null
+          - unique
+      - name: ORDER_ID
+        description: "Order key as NUMBER. Must exist in silver_orders."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('silver_orders')
+              field: ORDER_ID
+      - name: PRODUCT_ID
+        description: "Product key as NUMBER. Must exist in silver_products."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('silver_products')
+              field: PRODUCT_ID
+      - name: QUANTITY
+        description: "Quantity as NUMBER. Always above 0."
+        tests:
+          - not_null
+      - name: UNIT_PRICE
+        description: "Unit price as NUMBER(12,2). Never below 0."
+        tests:
+          - not_null
+      - name: _LOADED_AT
+        description: "Audit: time the row was loaded into Bronze."
+      - name: _SOURCE_FILE
+        description: "Audit: CSV file the row came from."
+      - name: _BATCH_ID
+        description: "Audit: load batch, for example B001."
+        tests:
+          - not_null
+      - name: _SOURCE_SYSTEM
+        description: "Audit: system that sent the file."
+      - name: _SOURCE_ROW_NUMBER
+        description: "Audit: line number inside the CSV file."
+
+  - name: quarantine_order_items
+    description: >
+      Rejected order line rows with raw values. Batch B001 (paper check): 10 rows (5 lines of quarantined orders 1050/1150, orphan line 450, lines 63/156 NULL, 244 quantity -1, 379 quantity 'two').
+    columns:
+      - name: ORDER_ITEM_ID
+        description: "Raw text value from Bronze."
+      - name: ORDER_ID
+        description: "Raw text value from Bronze."
+      - name: PRODUCT_ID
+        description: "Raw text value from Bronze."
+      - name: QUANTITY
+        description: "Raw text value from Bronze."
+      - name: UNIT_PRICE
+        description: "Raw text value from Bronze."
+      - name: REJECT_REASON
+        description: "Every failed rule, joined with ' | ', for example 'ORDER_ID-RANGE: PARENT_QUARANTINED'."
+        tests:
+          - not_null:
+              config:
+                severity: warn
+      - name: QUARANTINED_AT
+        description: "Time the dbt run put the row here."
+      - name: _LOADED_AT
+        description: "Audit: time the row was loaded into Bronze."
+      - name: _SOURCE_FILE
+        description: "Audit: CSV file the row came from."
+      - name: _BATCH_ID
+        description: "Audit: load batch, for example B001."
+      - name: _SOURCE_SYSTEM
+        description: "Audit: system that sent the file."
+      - name: _SOURCE_ROW_NUMBER
+        description: "Audit: line number inside the CSV file."

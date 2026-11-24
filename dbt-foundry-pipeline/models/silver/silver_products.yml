@@ -1,0 +1,89 @@
+# Foundry dbt pipeline - Silver PRODUCTS descriptions and tests
+# (models/silver/silver_products.yml)
+#
+# WHAT THIS FILE DOES
+# Describes the two models (silver_products, quarantine_products) and adds dbt tests.
+# A test runs AFTER the model is built ("dbt test" or "dbt build"). It does
+# not change data; it only reports. Same pattern as silver_customers.yml.
+#
+# BEFORE / AFTER example
+#   Before: Bronze CATEGORY 'books ' -> the clean rule makes it 'Books'.
+#   After:  accepted_values reads Silver CATEGORY and finds only the 5 categories.
+#           If anyone breaks the clean rule, 'books ' shows up and the test FAILS.
+#
+# severity: Silver tests are error (bad data must never pass quietly into Gold);
+# the quarantine test is warn (it only describes the rejected rows).
+#
+# NOT COVERED HERE (same as CUSTOMERS): range checks (> 0, >= 0) as tests,
+# row count check Silver + quarantine = Bronze, quarantine % against
+# quarantine_warn_pct / quarantine_stop_pct.
+
+version: 2
+
+models:
+  - name: silver_products
+    description: >
+      Clean product rows: Bronze rows that passed all 8 QUARANTINE rules, with the 2 CLEAN rules applied and real types. Batch B001 (paper check): 28 rows.
+    columns:
+      - name: PRODUCT_ID
+        description: "Product key as NUMBER. One row per product."
+        tests:
+          - not_null
+          - unique
+      - name: PRODUCT_NAME
+        description: "Product name, spaces trimmed. Never empty."
+        tests:
+          - not_null
+      - name: CATEGORY
+        description: "Category, trimmed and Initcap ('books ' -> 'Books'). Only the 5 allowed categories."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Home', 'Toys', 'Electronics', 'Books', 'Sports']
+      - name: LIST_PRICE
+        description: "Price as NUMBER(12,2), from Bronze UNIT_PRICE. Never below 0."
+        tests:
+          - not_null
+      - name: _LOADED_AT
+        description: "Audit: time the row was loaded into Bronze."
+      - name: _SOURCE_FILE
+        description: "Audit: CSV file the row came from."
+      - name: _BATCH_ID
+        description: "Audit: load batch, for example B001."
+        tests:
+          - not_null
+      - name: _SOURCE_SYSTEM
+        description: "Audit: system that sent the file."
+      - name: _SOURCE_ROW_NUMBER
+        description: "Audit: line number inside the CSV file."
+
+  - name: quarantine_products
+    description: >
+      Rejected product rows with raw values. Batch B001 (paper check): 2 rows (product 29 price -5.00, product 30 price 'abc').
+    columns:
+      - name: PRODUCT_ID
+        description: "Raw text value from Bronze."
+      - name: PRODUCT_NAME
+        description: "Raw text value from Bronze."
+      - name: CATEGORY
+        description: "Raw text value from Bronze."
+      - name: UNIT_PRICE
+        description: "Raw text value from Bronze."
+      - name: REJECT_REASON
+        description: "Every failed rule, joined with ' | ', for example 'ORDER_ID-RANGE: PARENT_QUARANTINED'."
+        tests:
+          - not_null:
+              config:
+                severity: warn
+      - name: QUARANTINED_AT
+        description: "Time the dbt run put the row here."
+      - name: _LOADED_AT
+        description: "Audit: time the row was loaded into Bronze."
+      - name: _SOURCE_FILE
+        description: "Audit: CSV file the row came from."
+      - name: _BATCH_ID
+        description: "Audit: load batch, for example B001."
+      - name: _SOURCE_SYSTEM
+        description: "Audit: system that sent the file."
+      - name: _SOURCE_ROW_NUMBER
+        description: "Audit: line number inside the CSV file."

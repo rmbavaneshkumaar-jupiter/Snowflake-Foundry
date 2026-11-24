@@ -1,0 +1,101 @@
+# Foundry dbt pipeline - Silver ORDERS descriptions and tests
+# (models/silver/silver_orders.yml)
+#
+# WHAT THIS FILE DOES
+# Describes the two models (silver_orders, quarantine_orders) and adds dbt tests.
+# A test runs AFTER the model is built ("dbt test" or "dbt build"). It does
+# not change data; it only reports. Same pattern as silver_customers.yml.
+#
+# BEFORE / AFTER example
+#   Before: Bronze STATUS ' shipped' (order 1020) -> the clean rule makes it 'SHIPPED'.
+#   After:  accepted_values reads Silver ORDER_STATUS and finds only PENDING, SHIPPED, COMPLETED.
+#   relationships: every Silver CUSTOMER_ID must exist in silver_customers.
+#           If the parent check in quarantine_orders breaks, this test FAILS.
+#
+# severity: Silver tests are error (bad data must never pass quietly into Gold);
+# the quarantine test is warn (it only describes the rejected rows).
+#
+# NOT COVERED HERE (same as CUSTOMERS): range checks (> 0, >= 0) as tests,
+# row count check Silver + quarantine = Bronze, quarantine % against
+# quarantine_warn_pct / quarantine_stop_pct.
+
+version: 2
+
+models:
+  - name: silver_orders
+    description: >
+      Clean order rows: Bronze rows that passed all 10 QUARANTINE rules (including the parent check on CUSTOMER_ID), with the 2 CLEAN rules applied and real types. Batch B001 (paper check): 198 rows.
+    columns:
+      - name: ORDER_ID
+        description: "Order key as NUMBER. One row per order."
+        tests:
+          - not_null
+          - unique
+      - name: CUSTOMER_ID
+        description: "Customer key as NUMBER. Must exist in silver_customers."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('silver_customers')
+              field: CUSTOMER_ID
+      - name: STORE_ID
+        description: "Store key as NUMBER. Blank text became NULL; NULL is allowed."
+      - name: ORDER_DATE
+        description: "Order date as DATE."
+        tests:
+          - not_null
+      - name: ORDER_STATUS
+        description: "Status, trimmed and upper case (from Bronze STATUS)."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['PENDING', 'SHIPPED', 'COMPLETED']
+      - name: PROMO_CODE
+        description: "Promo code as text. No rule; NULL in every B001 row."
+      - name: _LOADED_AT
+        description: "Audit: time the row was loaded into Bronze."
+      - name: _SOURCE_FILE
+        description: "Audit: CSV file the row came from."
+      - name: _BATCH_ID
+        description: "Audit: load batch, for example B001."
+        tests:
+          - not_null
+      - name: _SOURCE_SYSTEM
+        description: "Audit: system that sent the file."
+      - name: _SOURCE_ROW_NUMBER
+        description: "Audit: line number inside the CSV file."
+
+  - name: quarantine_orders
+    description: >
+      Rejected order rows with raw values. Batch B001 (paper check): 2 rows (order 1050 STATUS 'WRONG', order 1150 date 2026-02-30).
+    columns:
+      - name: ORDER_ID
+        description: "Raw text value from Bronze."
+      - name: CUSTOMER_ID
+        description: "Raw text value from Bronze."
+      - name: STORE_ID
+        description: "Raw text value from Bronze."
+      - name: ORDER_DATE
+        description: "Raw text value from Bronze."
+      - name: STATUS
+        description: "Raw text value from Bronze."
+      - name: PROMO_CODE
+        description: "Raw text value from Bronze."
+      - name: REJECT_REASON
+        description: "Every failed rule, joined with ' | ', for example 'ORDER_ID-RANGE: PARENT_QUARANTINED'."
+        tests:
+          - not_null:
+              config:
+                severity: warn
+      - name: QUARANTINED_AT
+        description: "Time the dbt run put the row here."
+      - name: _LOADED_AT
+        description: "Audit: time the row was loaded into Bronze."
+      - name: _SOURCE_FILE
+        description: "Audit: CSV file the row came from."
+      - name: _BATCH_ID
+        description: "Audit: load batch, for example B001."
+      - name: _SOURCE_SYSTEM
+        description: "Audit: system that sent the file."
+      - name: _SOURCE_ROW_NUMBER
+        description: "Audit: line number inside the CSV file."
