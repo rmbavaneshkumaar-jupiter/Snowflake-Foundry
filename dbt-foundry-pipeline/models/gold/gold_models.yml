@@ -1,0 +1,92 @@
+# Foundry dbt pipeline - Gold descriptions and tests (models/gold/gold_models.yml)
+#
+# WHAT THIS FILE DOES
+# Describes the two Gold models and adds dbt tests. A test runs AFTER the
+# model is built ("dbt build"). It does not change data; it only reports.
+# The bigger check (Gold totals = Silver totals, one row per month and key)
+# is in tests/assert_gold_matches_silver.sql.
+#
+# BEFORE / AFTER example (accepted_values on CATEGORY, severity warn)
+#   Before: an order line points to a product that is not in Silver.
+#   After:  Gold shows that line under category 'UNKNOWN' (sales are kept),
+#           and this test WARNS so a person looks at it. It does not stop the run,
+#           because hiding the sales would be worse.
+#
+# severity
+#   error (default) = dbt marks the run as failed (NULL month, NULL amount).
+#   warn            = dbt reports it, the run continues (UNKNOWN rows).
+
+version: 2
+
+models:
+  - name: gold_monthly_sales_by_category
+    description: >
+      One row per sales month and product category: gross sales, refunds
+      (split over the order's lines by amount share), net sales, return count.
+      Reads Silver only. Batch B001 (paper check): 30 rows, gross 441,950.00,
+      refunds 15,845.00, net 426,105.00.
+    columns:
+      - name: SALES_MONTH
+        description: "First day of the month (DATE). Sales use ORDER_DATE, refunds use RETURN_DATE."
+        tests:
+          - not_null
+      - name: CATEGORY
+        description: "Product category from silver_products. 'UNKNOWN' if the product is not in Silver."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Books', 'Electronics', 'Home', 'Sports', 'Toys']
+              config:
+                severity: warn
+      - name: GROSS_SALES
+        description: "SUM(QUANTITY x UNIT_PRICE) of the month's order lines."
+        tests:
+          - not_null
+      - name: REFUND_AMOUNT
+        description: "Refunds in the month, split by line share, rounded to 2 decimals per row."
+        tests:
+          - not_null
+      - name: NET_SALES
+        description: "GROSS_SALES - REFUND_AMOUNT."
+        tests:
+          - not_null
+      - name: RETURN_COUNT
+        description: "Returns in the month. A return counts once in each category of its order."
+        tests:
+          - not_null
+
+  - name: gold_monthly_sales_by_city
+    description: >
+      One row per sales month and customer city: gross sales, refunds (whole
+      refund, not split), net sales, return count. Reads Silver only; no name,
+      email or phone. Batch B001 (paper check): 36 rows, gross 441,950.00,
+      refunds 15,845.00, net 426,105.00.
+    columns:
+      - name: SALES_MONTH
+        description: "First day of the month (DATE). Sales use ORDER_DATE, refunds use RETURN_DATE."
+        tests:
+          - not_null
+      - name: CITY
+        description: "City of the order's customer. 'UNKNOWN' if the customer is not in Silver."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Bengaluru', 'Chennai', 'Delhi', 'Hyderabad', 'Mumbai', 'Pune']
+              config:
+                severity: warn
+      - name: GROSS_SALES
+        description: "SUM(QUANTITY x UNIT_PRICE) of the month's order lines."
+        tests:
+          - not_null
+      - name: REFUND_AMOUNT
+        description: "Sum of REFUND_AMOUNT of returns in the month (not split)."
+        tests:
+          - not_null
+      - name: NET_SALES
+        description: "GROSS_SALES - REFUND_AMOUNT."
+        tests:
+          - not_null
+      - name: RETURN_COUNT
+        description: "Returns in the month. Sum over all rows = Silver RETURNS rows."
+        tests:
+          - not_null
